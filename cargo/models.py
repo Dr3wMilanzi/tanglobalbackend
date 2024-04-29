@@ -1,6 +1,13 @@
 import uuid
 from django.db import models
 from django.conf import settings
+from django.utils.text import slugify
+
+class CargoDocument(models.Model):
+    documentName = models.CharField(max_length=180)
+    documentFile = models.FileField(upload_to='cargo/file/')
+
+
 
 class CargoType(models.Model):
     name = models.CharField(max_length=180)
@@ -30,6 +37,8 @@ class Cargo(models.Model):
         ('cancelled', 'Cancelled'),
     ]
     status = models.CharField(max_length=20, choices=status_choices, default='pending')
+    cargo_document = models.ForeignKey(CargoDocument, on_delete=models.CASCADE,null=True,blank=True)
+
     
     def save(self, *args, **kwargs):
         if not self.slug:
