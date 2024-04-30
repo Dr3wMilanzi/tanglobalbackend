@@ -20,6 +20,7 @@ from django.urls import path,re_path,include
 urlpatterns = [
     path('admin/', admin.site.urls),
     re_path(r'^api/v1/auth/', include('djoser.urls')),
+    re_path(r'^api/v1/auth/', include('djoser.urls.jwt')),
     path('api/v1/cargo/', include('cargo.urls')),
     path('api/v1/fleet/', include('fleet.urls')),
 
