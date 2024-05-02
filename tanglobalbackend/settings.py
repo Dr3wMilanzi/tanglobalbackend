@@ -44,7 +44,7 @@ INSTALLED_APPS = [
 
     # drf packages
     'rest_framework',
-    'rest_framework.authtoken',
+    'rest_framework_simplejwt',
     'djoser',
     "corsheaders",
 ]
@@ -123,12 +123,13 @@ USE_I18N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/4.2/howto/static-files/
+# Media files (uploaded by users)
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media/'
 
-STATIC_URL = 'static/'
-
-# Default primary key field type
+# Static files (CSS, JavaScript, images)
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -145,9 +146,17 @@ REST_FRAMEWORK = {
     ),
 }
 
-SIMPLE_JWT = {
-   'AUTH_HEADER_TYPES': ('JWT',),
+
+DJOSER = {
+    'LOGIN_FIELD': 'email',
+    'SERIALIZERS': {
+        'user': 'accounts.serializers.CustomUserCreateSerializer',
+        'current_user': 'accounts.serializers.CustomUserSerializer',
+        'user_create': 'accounts.serializers.RegisterSerializer',
+        # 'current_user': 'accounts.serializers.CurrentUserSerializer'
+    }
 }
+
 
 CORS_ALLOWED_ORIGINS = [
     # "https://example.com",

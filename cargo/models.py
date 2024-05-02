@@ -7,8 +7,6 @@ class CargoDocument(models.Model):
     documentName = models.CharField(max_length=180)
     documentFile = models.FileField(upload_to='cargo/file/')
 
-
-
 class CargoType(models.Model):
     name = models.CharField(max_length=180)
     slug = models.SlugField(blank=False, null=True, unique=True,editable=False)

@@ -4,6 +4,7 @@ from django.conf import settings
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
+from django_resized import ResizedImageField
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -21,8 +22,10 @@ class CustomUserManager(BaseUserManager):
         return self.create_user(email, password, **extra_fields)
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
-    email = models.EmailField(unique=True)
+    email = models.EmailField(unique=True,blank=False,null=False)
+    full_name = models.CharField(max_length=180,blank=True,null=True)
     is_individual = models.BooleanField(default=False)
+    is_company = models.BooleanField(default=False)
     is_cargo_owner = models.BooleanField(default=False)
     is_fleet_owner = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
@@ -48,6 +51,7 @@ class CompanyContactDetails(models.Model):
     companyAddress = models.TextField()
     tin = models.CharField(max_length=100, blank=True, null=True)
     vat = models.CharField(max_length=100, blank=True, null=True)
+    company = ResizedImageField(size=[300, 300], upload_to='comapny/logo',quality=75,force_format='PNG',blank=True, null=True)
 
     def __str__(self):
         return self.companyName
@@ -55,7 +59,7 @@ class CompanyContactDetails(models.Model):
 
 @receiver(post_save, sender=CustomUser)
 def create_company_details(sender, instance, created, **kwargs):
-    if created and instance.is_cargo_owner or instance.is_fleet_owner:
+    if created and instance.is_company or instance.is_cargo_owner or instance.is_fleet_owner:
         CompanyContactDetails.objects.create(user=instance, company_name="Update Your Company Name")
 
 
