@@ -1,9 +1,5 @@
-from djoser.serializers import UserSerializer
 from rest_framework import serializers
-from .models import CompanyContactDetails, Membership,CustomUser
-from rest_framework.validators import UniqueValidator
-from django.contrib.auth.password_validation import validate_password
-
+from .models import CompanyContactDetails, Membership, CustomUser
 
 class CompanyContactDetailsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -15,38 +11,47 @@ class MembershipSerializer(serializers.ModelSerializer):
         model = Membership
         fields = '__all__'
 
-class CustomUserSerializer(UserSerializer):
+class CustomUserSerializer(serializers.ModelSerializer):
     company_details = CompanyContactDetailsSerializer(source='companycontactdetails', read_only=True)
     memberships = MembershipSerializer(source='membership', read_only=True)
-
-    class Meta(UserSerializer.Meta):
-        model = CustomUser
-        fields = ('id','full_name','email','is_superuser','is_staff','is_individual','is_cargo_owner','is_fleet_owner','is_company','memberships','company_details',)
-
-class CustomUserCreateSerializer(UserSerializer):
-    class Meta(UserSerializer.Meta):
-        model = CustomUser
-        fields = ('full_name','email','is_individual','is_cargo_owner','is_fleet_owner','is_company')
-
-class RegisterSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(required=True,validators=[UniqueValidator(queryset=CustomUser.objects.all())])
-    password = serializers.CharField(write_only=True, validators=[validate_password],style={'input_type': 'password'})
+    is_active_membership = serializers.SerializerMethodField()
 
     class Meta:
         model = CustomUser
-        fields = ('full_name','email','password','is_individual','is_cargo_owner','is_fleet_owner','is_company')
-        
-        
+        fields = ('id', 'full_name', 'email', 'is_superuser', 'is_staff', 'is_individual', 'is_cargo_owner', 'is_fleet_owner', 'is_company', 'is_active_membership', 'memberships', 'company_details')
+
+    def get_is_active_membership(self, obj):
+        # Check if the user has a related Membership instance
+        if hasattr(obj, 'membership'):
+            # Get the related Membership instance for the user
+            membership_instance = obj.membership
+            # Check if the membership is active
+            return membership_instance.is_active()
+        else:
+            # If no related Membership instance exists, return False
+            return False
+
+class CustomUserCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ('full_name', 'email', 'is_individual', 'is_cargo_owner', 'is_fleet_owner', 'is_company')
+
+class RegisterSerializer(serializers.ModelSerializer):
+    email = serializers.EmailField(required=True)
+    password = serializers.CharField(write_only=True, style={'input_type': 'password'})
+
+    class Meta:
+        model = CustomUser
+        fields = ('full_name', 'email', 'password', 'is_individual', 'is_cargo_owner', 'is_fleet_owner', 'is_company')
 
     def create(self, validated_data):
-        user = CustomUser.objects.create_user(validated_data['email'], 
-        validated_data['password']
+        user = CustomUser.objects.create_user(
+            email=validated_data['email'],
+            password=validated_data['password'],
+            full_name=validated_data.get('full_name', ''),
+            is_individual=validated_data.get('is_individual', False),
+            is_cargo_owner=validated_data.get('is_cargo_owner', False),
+            is_fleet_owner=validated_data.get('is_fleet_owner', False),
+            is_company=validated_data.get('is_company', False)
         )
-        user.full_name = validated_data['full_name']
-        user.is_individual = validated_data['is_individual']
-        user.typeofmember = validated_data['typeofmember']
-        user.is_cargo_owner = validated_data['is_cargo_owner']
-        user.is_fleet_owner = validated_data['is_fleet_owner']
-        user.is_company = validated_data['is_company']
-        user.save()
         return user

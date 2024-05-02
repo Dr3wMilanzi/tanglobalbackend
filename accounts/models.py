@@ -30,6 +30,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_fleet_owner = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
+    # is_active_membership = models.BooleanField(default=False)
 
 
     USERNAME_FIELD = 'email'
@@ -38,9 +39,6 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
-    
-    def is_active(self):
-        return self.membership.is_active()
     
 class CompanyContactDetails(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
