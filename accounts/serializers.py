@@ -18,7 +18,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ('id', 'full_name', 'email', 'is_superuser', 'is_staff', 'is_individual', 'is_cargo_owner', 'is_fleet_owner', 'is_company', 'is_active_membership', 'memberships', 'company_details')
+        fields = ('id', 'full_name', 'email', 'is_superuser', 'is_staff', 'is_individual','is_company', 'is_active_membership', 'memberships', 'company_details')
 
     def get_is_active_membership(self, obj):
         # Check if the user has a related Membership instance
@@ -34,7 +34,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
 class CustomUserCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ('full_name', 'email', 'is_individual', 'is_cargo_owner', 'is_fleet_owner', 'is_company')
+        fields = ('full_name', 'email', 'is_individual','is_company')
 
 class RegisterSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(required=True)
@@ -42,7 +42,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ('full_name', 'email', 'password', 'is_individual', 'is_cargo_owner', 'is_fleet_owner', 'is_company')
+        fields = ('full_name', 'email', 'password', 'is_individual','is_company')
 
     def create(self, validated_data):
         user = CustomUser.objects.create_user(
@@ -50,8 +50,6 @@ class RegisterSerializer(serializers.ModelSerializer):
             password=validated_data['password'],
             full_name=validated_data.get('full_name', ''),
             is_individual=validated_data.get('is_individual', False),
-            is_cargo_owner=validated_data.get('is_cargo_owner', False),
-            is_fleet_owner=validated_data.get('is_fleet_owner', False),
             is_company=validated_data.get('is_company', False)
         )
         return user

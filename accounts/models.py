@@ -26,8 +26,6 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     full_name = models.CharField(max_length=180,blank=True,null=True)
     is_individual = models.BooleanField(default=False)
     is_company = models.BooleanField(default=False)
-    is_cargo_owner = models.BooleanField(default=False)
-    is_fleet_owner = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
     # is_active_membership = models.BooleanField(default=False)
@@ -41,7 +39,13 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         return self.email
     
 class CompanyContactDetails(models.Model):
+    COMPANY_TYPES = (
+        ('Fleet Company', 'Fleet Company'),
+        ('Cargo Company', 'Cargo Company'),
+    )
+     
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    company_type = models.CharField(max_length=20, choices=COMPANY_TYPES,default="Fleet Company")
     companyName = models.CharField(max_length=100)
     comapnyTelephone = models.CharField(max_length=100)
     comapnyEmail = models.EmailField(max_length=100)
@@ -49,6 +53,7 @@ class CompanyContactDetails(models.Model):
     companyAddress = models.TextField()
     tin = models.CharField(max_length=100, blank=True, null=True)
     vat = models.CharField(max_length=100, blank=True, null=True)
+    is_approved = models.BooleanField(default=False)
     company = ResizedImageField(size=[300, 300], upload_to='comapny/logo',quality=75,force_format='PNG',blank=True, null=True)
 
     def __str__(self):
@@ -57,8 +62,8 @@ class CompanyContactDetails(models.Model):
 
 @receiver(post_save, sender=CustomUser)
 def create_company_details(sender, instance, created, **kwargs):
-    if created and instance.is_company or instance.is_cargo_owner or instance.is_fleet_owner:
-        CompanyContactDetails.objects.create(user=instance, company_name="Update Your Company Name")
+    if created and instance.is_company:
+        CompanyContactDetails.objects.create(user=instance, companyName="Update Your Company Name")
 
 
 

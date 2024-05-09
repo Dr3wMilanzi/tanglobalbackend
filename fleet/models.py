@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils.text import slugify
 from django_resized import ResizedImageField
+from accounts.models import CompanyContactDetails
 
 
 class VehicleType(models.Model):
@@ -30,11 +31,11 @@ class VehicleImage(models.Model):
 
 class Vehicle(models.Model):
     vehicleTypes = models.ManyToManyField(VehicleType, related_name='vehicles')
-    capacity = models.CharField(max_length=100) #in tones
+    company = models.ForeignKey(CompanyContactDetails,on_delete=models.SET_NULL,blank=True, null=True)
+    capacity = models.DecimalField(max_digits=10,decimal_places=2) #in tones
     platenumber = models.CharField(max_length=100) #in tones
     isInsuared = models.BooleanField(default=True)
     images = models.ForeignKey(VehicleImage, on_delete=models.CASCADE)
-    # Add other fields as needed
     
     def __str__(self):
         return f"{self.vehicle_type} ({self.capacity})"
