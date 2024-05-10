@@ -1,4 +1,5 @@
 from rest_framework import generics
+from rest_framework import status
 from rest_framework.response import Response
 from .models import Cargo, CargoType
 from .serializers import CargoSerializer,CargoTypeSerializer
@@ -12,6 +13,18 @@ class CargoListCreateAPIView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(sender_name=self.request.user)
+
+    def post(self, request, format=None):
+        cargo_type_ids = request.data.pop('cargo_type', [])  # Remove cargo_type from request data
+        serializer = CargoSerializer(data=request.data)
+        if serializer.is_valid():
+            cargo = serializer.save()
+
+            # Associate cargo_type IDs with the created Cargo instance
+            cargo.cargo_type.set(cargo_type_ids)
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CargoRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
