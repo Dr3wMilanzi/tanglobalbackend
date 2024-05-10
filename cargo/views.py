@@ -15,13 +15,15 @@ class CargoListCreateAPIView(generics.ListCreateAPIView):
         serializer.save(sender_name=self.request.user)
 
     def post(self, request, format=None):
-        cargo_type_ids = request.data.pop('cargo_type', [])  # Remove cargo_type from request data
+        #cargo_type_ids = request.data.pop('cargo_type', [])  # Remove cargo_type from request data
+        docs = request.FILES["documents"]
+        print(docs)
         serializer = CargoSerializer(data=request.data)
         if serializer.is_valid():
             cargo = serializer.save()
 
             # Associate cargo_type IDs with the created Cargo instance
-            cargo.cargo_type.set(cargo_type_ids)
+           # cargo.cargo_type.set(cargo_type_ids)
 
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
