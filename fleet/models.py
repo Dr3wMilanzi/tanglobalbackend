@@ -15,28 +15,26 @@ class VehicleType(models.Model):
         while VehicleType.objects.filter(slug=slug).exists():
             slug = f"{self.slug}-{count}"
             count += 1
-
         self.slug = slug
         super().save(*args, **kwargs)
 
     def __str__(self):
         return self.name
     
-class VehicleImage(models.Model):
-    image = ResizedImageField(size=[500, 300], upload_to='vehicles/images',quality=75,force_format='PNG')
-    
-    def __str__(self):
-        return f"Image for {self.vehicle.vehicle_type}"
         
-
 class Vehicle(models.Model):
-    vehicleTypes = models.ManyToManyField(VehicleType, related_name='vehicles')
     company = models.ForeignKey(CompanyContactDetails,on_delete=models.SET_NULL,blank=True, null=True)
     capacity = models.DecimalField(max_digits=10,decimal_places=2) #in tones
     platenumber = models.CharField(max_length=100) #in tones
     isInsuared = models.BooleanField(default=True)
-    images = models.ForeignKey(VehicleImage, on_delete=models.CASCADE)
     
     def __str__(self):
         return f"{self.vehicle_type} ({self.capacity})"
 
+class VehicleImage(models.Model):
+    vehicle = models.ForeignKey(Vehicle, related_name='images', on_delete=models.CASCADE)
+    image = ResizedImageField(size=[500, 300], upload_to='vehicles/images',quality=75,force_format='PNG')
+    
+    def __str__(self):
+        pass
+        # return f"Image for {self.vehicle}"

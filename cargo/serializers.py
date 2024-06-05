@@ -1,59 +1,64 @@
-# serializers.py
 from rest_framework import serializers
-from .models import Cargo, CargoDocument, CargoType
-from django.utils import timezone
-
-class CustomDateField(serializers.ReadOnlyField):
-    def to_representation(self, value):
-        # Convert datetime to date while preserving timezone information
-        if value is not None:
-            return timezone.localtime(value).date()
-        return None
-    
+from .models import Cargo, CargoType, CargoDocument
 
 
 class CargoTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = CargoType
-        fields = '__all__'
+        fields = ['id', 'name', 'slug']
+
 
 class CargoDocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = CargoDocument
-        fields = '__all__'
+        fields = ('id', 'documentName', 'documentFile')
+        extra_kwargs = {
+            'documentName': {'required': False},
+            'documentFile': {'required': False}
+        }
+
 
 class CargoSerializer(serializers.ModelSerializer):
-    added_at = CustomDateField()
-    cargo_type = CargoTypeSerializer(many=True, read_only=True)
-    cargo_document = CargoDocumentSerializer(many=True, required=False)
+    cargo_type = serializers.PrimaryKeyRelatedField(queryset=CargoType.objects.all(), many=True)
+    cargo_documents = CargoDocumentSerializer(many=True, required=False)
 
     class Meta:
         model = Cargo
         fields = '__all__'
-
+    
     def create(self, validated_data):
-        cargo_documents_data = validated_data.pop('cargo_document', [])
+        print(validated_data)
+        cargo_type_data = validated_data.pop('cargo_type', [])
+        cargo_documents_data = validated_data.pop('cargo_documents', [])
+
         cargo = Cargo.objects.create(**validated_data)
-        
+
+        for cargo_type_item in cargo_type_data:
+            cargo_type_obj = CargoType.objects.create(**cargo_type_item)
+            cargo.cargo_type.add(cargo_type_obj)
+
         for cargo_document_data in cargo_documents_data:
             CargoDocument.objects.create(cargo=cargo, **cargo_document_data)
-        
+
         return cargo
-    
 
     def update(self, instance, validated_data):
-        cargo_types_data = validated_data.pop('cargo_type', [])
-        cargo_documents_data = validated_data.pop('cargo_document', [])
-        instance.name = validated_data.get('name', instance.name)
-        # Update other fields similarly
-        instance.save()
+        cargo_type_data = validated_data.pop('cargo_type', [])
+        cargo_documents_data = validated_data.pop('cargo_documents', [])
 
-        instance.cargo_type.clear()
-        for cargo_type_data in cargo_types_data:
-            cargo_type, created = CargoType.objects.get_or_create(**cargo_type_data)
-            instance.cargo_type.add(cargo_type)
+        cargo_type_instances = []
+        for cargo_type_item in cargo_type_data:
+            cargo_type_obj, created = CargoType.objects.get_or_create(**cargo_type_item)
+            cargo_type_instances.append(cargo_type_obj)
 
-        instance.cargo_document.all().delete()
+        cargo_documents_instances = []
         for cargo_document_data in cargo_documents_data:
-            CargoDocument.objects.create(cargo=instance, **cargo_document_data)
+            cargo_document_obj, created = CargoDocument.objects.update_or_create(cargo=instance, **cargo_document_data)
+            cargo_documents_instances.append(cargo_document_obj)
+
+        instance.cargo_type.set(cargo_type_instances)
+
+        # If you want to remove any existing cargo documents not in the updated data
+        instance.cargo_documents.exclude(id__in=[cd.id for cd in cargo_documents_instances]).delete()
+
         return instance

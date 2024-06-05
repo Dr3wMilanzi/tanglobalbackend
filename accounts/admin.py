@@ -42,3 +42,4 @@ class UserAdmin(BaseUserAdmin):
 
 # Register CustomUser model with the UserAdmin
 admin.site.register(CustomUser, UserAdmin)
+admin.site.register(CompanyContactDetails)

@@ -12,6 +12,8 @@ urlpatterns = [
     re_path(r'^api/v1/auth/', include('djoser.urls')),
     path('api/v1/cargo/', include('cargo.urls')),
     path('api/v1/fleet/', include('fleet.urls')),
+    path('api/v1/company/', include('accounts.urls')),
+    path('api/v1/update/', include('updates.urls')),
     path('api/v1/auth/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('api/v1/auth/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
 

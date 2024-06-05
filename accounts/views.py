@@ -1,7 +1,18 @@
-from rest_framework import status
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework_simplejwt.tokens import RefreshToken
-from .serializers import UserLoginSerializer
+from rest_framework import viewsets,generics
+from .models import CompanyContactDetails
+from .serializers import CompanyContactDetailsSerializer
+
+
+class CompanyCreateList(generics.ListCreateAPIView):
+    queryset = CompanyContactDetails.objects.all()
+    serializer_class = CompanyContactDetailsSerializer
+
+
+class CompanyRetrieve(generics.RetrieveUpdateDestroyAPIView):
+    queryset = CompanyContactDetails.objects.all()
+    serializer_class = CompanyContactDetailsSerializer
+
+    def perform_update(self, serializer):
+        serializer.save(user=self.request.user)
 
 

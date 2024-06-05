@@ -53,11 +53,29 @@ class CompanyContactDetails(models.Model):
     companyAddress = models.TextField()
     tin = models.CharField(max_length=100, blank=True, null=True)
     vat = models.CharField(max_length=100, blank=True, null=True)
+    companyreg = models.CharField(max_length=100, blank=True, null=True)
     is_approved = models.BooleanField(default=False)
     company = ResizedImageField(size=[300, 300], upload_to='comapny/logo',quality=75,force_format='PNG',blank=True, null=True)
 
     def __str__(self):
         return self.companyName
+    
+    def isProfileComplete(self):
+        # Check if any required fields are None or empty
+        if (
+            not self.company_type and
+            not self.companyName and
+            not self.comapnyTelephone and
+            not self.comapnyEmail and
+            not self.comapnyWebsite and
+            not self.companyAddress and 
+            not self.tin and
+            not self.vat and
+            not self.company
+        ):
+            return False
+
+        return True
     
 
 @receiver(post_save, sender=CustomUser)

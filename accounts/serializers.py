@@ -2,9 +2,14 @@ from rest_framework import serializers
 from .models import CompanyContactDetails, Membership, CustomUser
 
 class CompanyContactDetailsSerializer(serializers.ModelSerializer):
+    is_profile_complete = serializers.SerializerMethodField()
     class Meta:
         model = CompanyContactDetails
         fields = '__all__'
+        read_only_fields = ['user']
+
+    def get_is_profile_complete(self, obj):
+        return obj.isProfileComplete()
 
 class MembershipSerializer(serializers.ModelSerializer):
     class Meta:
@@ -30,6 +35,7 @@ class CustomUserSerializer(serializers.ModelSerializer):
         else:
             # If no related Membership instance exists, return False
             return False
+    
 
 class CustomUserCreateSerializer(serializers.ModelSerializer):
     class Meta:
