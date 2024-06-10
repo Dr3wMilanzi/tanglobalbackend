@@ -9,26 +9,22 @@ class UpdateTypeSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'slug']
 
 class UpdateSerializer(serializers.ModelSerializer):
-    update_type = serializers.PrimaryKeyRelatedField(queryset=UpdateType.objects.all(), write_only=True)
+    # TrackSerializer(many=True, read_only=True)
+    update_type = serializers.PrimaryKeyRelatedField(queryset=UpdateType.objects.all())
 
     class Meta:
         model = Update
-        fields = ['id', 'name', 'slug', 'update_type', 'content', 'isapproved', 'created_at']
+        depth=1
+        fields = ['id', 'name', 'slug', 'update_type', 'content', 'is_approved', 'created_at']
         read_only_fields = ['update_type']
-
-    # def create(self, validated_data):
-    #     update_type_id = validated_data.pop('update_type')
-    #     update_type = UpdateType.objects.get(id=update_type_id)
-    #     validated_data['update_type'] = update_type
-    #     return super().create(validated_data)
 
 
 class SelectedUpdatesByUserSerializer(serializers.ModelSerializer):
-    update_type = UpdateTypeSerializer(read_only=True)
+    update_type = serializers.PrimaryKeyRelatedField(queryset=UpdateType.objects.all())
 
     class Meta:
         model = SelectedUpdatesByUser
-        fields = ['id', 'update_type']
+        fields = ['id', 'update_type','user']
 
 class UpdateViewSerializer(serializers.ModelSerializer):
     update = UpdateSerializer(read_only=True)
