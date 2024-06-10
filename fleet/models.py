@@ -29,9 +29,14 @@ class Vehicle(models.Model):
     capacity = models.DecimalField(max_digits=10,decimal_places=2) #in tones
     platenumber = models.CharField(max_length=100,unique=True,blank=False,null=False) #in tones
     isInsuared = models.BooleanField(default=True)
+    isApproved = models.BooleanField(default=False)
     
     def __str__(self):
         return f"{self.vehicle_type} ({self.capacity})"
+    
+    def approve(self):
+        self.isApproved = True
+        self.save()
 
 class VehicleImage(models.Model):
     vehicle = models.ForeignKey(Vehicle, related_name='images', on_delete=models.CASCADE)

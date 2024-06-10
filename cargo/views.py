@@ -4,12 +4,14 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from .models import Cargo, CargoType,CargoDocument
 from .serializers import CargoSerializer, CargoTypeSerializer
+from rest_framework.permissions import IsAuthenticated
 
 
 class CargoListCreateAPIView(generics.ListCreateAPIView):
     serializer_class = CargoSerializer
     queryset = Cargo.objects.all()
     parser_classes = (MultiPartParser, FormParser)
+    permission_classes = [IsAuthenticated]
 
     # def perform_create(self, serializer):
         # docs = self.request.FILES.getlist("cargo_documents")
@@ -32,6 +34,8 @@ class CargoListCreateAPIView(generics.ListCreateAPIView):
 class CargoRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Cargo.objects.all()
     serializer_class = CargoSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'uuid'
 
 
 class CargoCartegoriesCreateAPIView(generics.ListCreateAPIView):
