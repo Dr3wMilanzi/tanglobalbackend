@@ -1,61 +1,47 @@
 from rest_framework import serializers
-from .models import CompanyContactDetails, Membership, CustomUser
+from .models import CompanyContactDetails, CustomUser, Invitation, PaymentPlan
+from djoser.serializers import UserCreateSerializer as BaseUserCreateSerializer, UserSerializer as BaseUserSerializer
+
+class PaymentPlanSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PaymentPlan
+        fields = '__all__'
 
 class CompanyContactDetailsSerializer(serializers.ModelSerializer):
     is_profile_complete = serializers.SerializerMethodField()
+    plan_details = PaymentPlanSerializer(source='plan', read_only=True)
+
     class Meta:
         model = CompanyContactDetails
         fields = '__all__'
         read_only_fields = ['user']
 
     def get_is_profile_complete(self, obj):
-        return obj.isProfileComplete()
+        # Assuming you have a method `is_profile_complete` in the model
+        return obj.is_profile_complete()
 
-class MembershipSerializer(serializers.ModelSerializer):
+class InvitationSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Membership
+        model = Invitation
         fields = '__all__'
 
-class CustomUserSerializer(serializers.ModelSerializer):
-    company_details = CompanyContactDetailsSerializer(source='companycontactdetails', read_only=True)
-    memberships = MembershipSerializer(source='membership', read_only=True)
-    is_active_membership = serializers.SerializerMethodField()
+class UserSerializer(BaseUserSerializer):
+    company_details = CompanyContactDetailsSerializer(source='company', read_only=True)
+    plan_details = PaymentPlanSerializer(source='plan', read_only=True)
+    invitations = InvitationSerializer(source='invitations_sent', many=True, read_only=True)
 
-    class Meta:
+    class Meta(BaseUserSerializer.Meta):
         model = CustomUser
-        fields = ('id', 'full_name', 'email', 'is_superuser', 'is_staff', 'is_individual','is_company', 'is_active_membership', 'memberships', 'company_details')
-
-    def get_is_active_membership(self, obj):
-        # Check if the user has a related Membership instance
-        if hasattr(obj, 'membership'):
-            # Get the related Membership instance for the user
-            membership_instance = obj.membership
-            # Check if the membership is active
-            return membership_instance.is_active()
-        else:
-            # If no related Membership instance exists, return False
-            return False
-    
-
-class CustomUserCreateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = CustomUser
-        fields = ('full_name', 'email', 'is_individual','is_company')
-
-class RegisterSerializer(serializers.ModelSerializer):
-    email = serializers.EmailField(required=True)
-    password = serializers.CharField(write_only=True, style={'input_type': 'password'})
-
-    class Meta:
-        model = CustomUser
-        fields = ('full_name', 'email', 'password', 'is_individual','is_company')
-
-    def create(self, validated_data):
-        user = CustomUser.objects.create_user(
-            email=validated_data['email'],
-            password=validated_data['password'],
-            full_name=validated_data.get('full_name', ''),
-            is_individual=validated_data.get('is_individual', False),
-            is_company=validated_data.get('is_company', False)
+        fields = BaseUserSerializer.Meta.fields + (
+            'full_name', 'phone_number', 'address', 'profile_picture', 'is_individual', 
+            'is_company', 'company', 'company_details', 'plan', 'plan_details', 
+            'plan_paid', 'plan_expiry_date', 'invitations'
         )
-        return user
+
+class UserCreateSerializer(BaseUserCreateSerializer):
+    class Meta(BaseUserCreateSerializer.Meta):
+        model = CustomUser
+        fields = BaseUserCreateSerializer.Meta.fields + (
+            'full_name', 'phone_number', 'address', 'profile_picture', 
+            'is_individual', 'is_company', 'company'
+        )
