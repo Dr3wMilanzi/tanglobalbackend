@@ -1,64 +1,44 @@
 from rest_framework import serializers
-from .models import Cargo, CargoType, CargoDocument
-
+from .models import CargoType, Cargo, CargoDocument, CargoImage, CargoTracking
 
 class CargoTypeSerializer(serializers.ModelSerializer):
     class Meta:
         model = CargoType
-        fields = ['id', 'name', 'slug']
-
+        fields = '__all__'
 
 class CargoDocumentSerializer(serializers.ModelSerializer):
     class Meta:
         model = CargoDocument
-        fields = ('id', 'documentName', 'documentFile')
-        extra_kwargs = {
-            'documentName': {'required': False},
-            'documentFile': {'required': False}
-        }
+        fields = '__all__'
 
+class CargoImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CargoImage
+        fields = '__all__'
 
 class CargoSerializer(serializers.ModelSerializer):
-    cargo_type = serializers.PrimaryKeyRelatedField(queryset=CargoType.objects.all(), many=True)
-    cargo_documents = CargoDocumentSerializer(many=True, required=False)
+    cargo_documents = CargoDocumentSerializer(many=True, read_only=False, required=False)
+    images = CargoImageSerializer(many=True, read_only=False, required=False)
+    cargo_type = serializers.PrimaryKeyRelatedField(queryset=CargoType.objects.all())
 
     class Meta:
         model = Cargo
         fields = '__all__'
-    
-    def create(self, validated_data):
-        print(validated_data)
-        cargo_type_data = validated_data.pop('cargo_type', [])
-        cargo_documents_data = validated_data.pop('cargo_documents', [])
 
+    def create(self, validated_data):
+        documents_data = validated_data.pop('cargo_documents', [])
+        images_data = validated_data.pop('images', [])
         cargo = Cargo.objects.create(**validated_data)
 
-        for cargo_type_item in cargo_type_data:
-            cargo_type_obj = CargoType.objects.create(**cargo_type_item)
-            cargo.cargo_type.add(cargo_type_obj)
+        for document_data in documents_data:
+            CargoDocument.objects.create(cargo=cargo, **document_data)
 
-        for cargo_document_data in cargo_documents_data:
-            CargoDocument.objects.create(cargo=cargo, **cargo_document_data)
+        for image_data in images_data:
+            CargoImage.objects.create(cargo=cargo, **image_data)
 
         return cargo
 
-    def update(self, instance, validated_data):
-        cargo_type_data = validated_data.pop('cargo_type', [])
-        cargo_documents_data = validated_data.pop('cargo_documents', [])
-
-        cargo_type_instances = []
-        for cargo_type_item in cargo_type_data:
-            cargo_type_obj, created = CargoType.objects.get_or_create(**cargo_type_item)
-            cargo_type_instances.append(cargo_type_obj)
-
-        cargo_documents_instances = []
-        for cargo_document_data in cargo_documents_data:
-            cargo_document_obj, created = CargoDocument.objects.update_or_create(cargo=instance, **cargo_document_data)
-            cargo_documents_instances.append(cargo_document_obj)
-
-        instance.cargo_type.set(cargo_type_instances)
-
-        # If you want to remove any existing cargo documents not in the updated data
-        instance.cargo_documents.exclude(id__in=[cd.id for cd in cargo_documents_instances]).delete()
-
-        return instance
+class CargoTrackingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CargoTracking
+        fields = '__all__'

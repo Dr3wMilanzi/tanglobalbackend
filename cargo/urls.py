@@ -1,9 +1,29 @@
-from django.urls import path
-from .views import CargoListCreateAPIView, CargoRetrieveUpdateDestroyAPIView, CargoByCategoryAPIView,CargoCartegoriesCreateAPIView
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import CargoTypeViewSet, CargoViewSet, CargoDocumentViewSet, CargoImageViewSet, CargoTrackingViewSet
+
+router = DefaultRouter()
+router.register(r'type/cargo', CargoTypeViewSet)
+router.register(r'', CargoViewSet)
+router.register(r'cargo-documents', CargoDocumentViewSet)
+router.register(r'cargo-images', CargoImageViewSet)
+router.register(r'cargo-tracking', CargoTrackingViewSet)
 
 urlpatterns = [
-    path('', CargoListCreateAPIView.as_view(), name='cargo-list-create'),
-    path('type', CargoCartegoriesCreateAPIView.as_view(), name='cargo-list-create'),
-    path('<uuid:uuid>/', CargoRetrieveUpdateDestroyAPIView.as_view(), name='cargo-retrieve-update-destroy'),
-    path('by-category', CargoByCategoryAPIView.as_view(), name='cargo-by-category'),
+    path('', include(router.urls)),
 ]
+
+# from django.urls import include, path
+# from rest_framework.routers import DefaultRouter
+# from .views import CargoTypeViewSet, CargoViewSet, CargoDocumentViewSet, CargoImageViewSet, CargoTrackingViewSet
+
+# router = DefaultRouter()
+# router.register(r'cargo-types', CargoTypeViewSet)
+# router.register(r'cargos', CargoViewSet)
+# router.register(r'cargo-documents', CargoDocumentViewSet)
+# router.register(r'cargo-images', CargoImageViewSet)
+# router.register(r'cargo-tracking', CargoTrackingViewSet)
+
+# urlpatterns = [
+#     path('api/', include(router.urls)),
+# ]

@@ -1,59 +1,57 @@
-from rest_framework import generics
-from rest_framework import status
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.response import Response
-from .models import Cargo, CargoType,CargoDocument
-from .serializers import CargoSerializer, CargoTypeSerializer
-from rest_framework.permissions import IsAuthenticated
+from .models import CargoType, Cargo, CargoDocument, CargoImage, CargoTracking
+from .serializers import CargoTypeSerializer, CargoSerializer, CargoDocumentSerializer, CargoImageSerializer, CargoTrackingSerializer
 
-
-class CargoListCreateAPIView(generics.ListCreateAPIView):
-    serializer_class = CargoSerializer
-    queryset = Cargo.objects.all()
-    parser_classes = (MultiPartParser, FormParser)
-    permission_classes = [IsAuthenticated]
-
-    # def perform_create(self, serializer):
-        # docs = self.request.FILES.getlist("cargo_documents")
-        # print(docs)
-        # payload = self.request.data
-        # print("Payload:", payload)
-        # return super().perform_create(serializer)
-        
-        # cargo_documents = self.request.FILES.getlist('cargo_documents')
-        # cargo_document_names = self.request.POST.getlist('cargo_document_names')
-        # print(cargo_documents)
-        # cargo = serializer.save(sender_name=self.request.user)
-
-        # for i, document in enumerate(cargo_documents):
-        #     document_name = cargo_document_names[i] if i < len(cargo_document_names) else ''
-        #     CargoDocument.objects.create(cargo=cargo, documentFile=document, documentName=document_name)
-
-
-
-class CargoRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Cargo.objects.all()
-    serializer_class = CargoSerializer
-    permission_classes = [IsAuthenticated]
-    lookup_field = 'uuid'
-
-
-class CargoCartegoriesCreateAPIView(generics.ListCreateAPIView):
+class CargoTypeViewSet(viewsets.ModelViewSet):
     queryset = CargoType.objects.all()
     serializer_class = CargoTypeSerializer
+    lookup_field = 'slug'
 
-
-class CargoByCategoryAPIView(generics.ListCreateAPIView):
-    serializer_class = CargoSerializer
+class CargoViewSet(viewsets.ModelViewSet):
     queryset = Cargo.objects.all()
+    serializer_class = CargoSerializer
+    lookup_field = 'slug'
 
-    def perform_create(self, serializer):
-        cargo_documents_data = self.request.data.pop('cargo_documents', [])
-        print(cargo_documents_data)
-        # # cargo_type = self.request.data.pop('cargo_type', None)
+    @action(detail=True, methods=['post'])
+    def set_status_pending(self, request, slug=None):
+        cargo = self.get_object()
+        cargo.set_status_pending()
+        return Response({'status': 'status set to pending'}, status=status.HTTP_200_OK)
 
-        # # for document_data in cargo_documents_data:
-        # #     CargoDocument.objects.create(cargo=cargo, **document_data)
-        # serializer.save(sender_name=self.request.user)
+    @action(detail=True, methods=['post'])
+    def set_status_in_transit(self, request, slug=None):
+        cargo = self.get_object()
+        cargo.set_status_in_transit()
+        return Response({'status': 'status set to in transit'}, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=['post'])
+    def set_status_delivered(self, request, slug=None):
+        cargo = self.get_object()
+        cargo.set_status_delivered()
+        return Response({'status': 'status set to delivered'}, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=['post'])
+    def set_status_delayed(self, request, slug=None):
+        cargo = self.get_object()
+        cargo.set_status_delayed()
+        return Response({'status': 'status set to delayed'}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'])
+    def set_status_cancelled(self, request, slug=None):
+        cargo = self.get_object()
+        cargo.set_status_cancelled()
+        return Response({'status': 'status set to cancelled'}, status=status.HTTP_200_OK)
+
+class CargoDocumentViewSet(viewsets.ModelViewSet):
+    queryset = CargoDocument.objects.all()
+    serializer_class = CargoDocumentSerializer
+
+class CargoImageViewSet(viewsets.ModelViewSet):
+    queryset = CargoImage.objects.all()
+    serializer_class = CargoImageSerializer
+
+class CargoTrackingViewSet(viewsets.ModelViewSet):
+    queryset = CargoTracking.objects.all()
+    serializer_class = CargoTrackingSerializer
