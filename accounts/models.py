@@ -6,6 +6,9 @@ from django.dispatch import receiver
 from django.utils import timezone
 from django_resized import ResizedImageField
 import uuid
+import logging
+
+logger = logging.getLogger(__name__)
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -20,6 +23,7 @@ class CustomUserManager(BaseUserManager):
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
+
         return self.create_user(email, password, **extra_fields)
 
 class PaymentPlan(models.Model):
@@ -46,11 +50,7 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     is_company = models.BooleanField(default=False)
     is_staff = models.BooleanField(default=False)
     is_active = models.BooleanField(default=True)
-    company = models.ForeignKey('CompanyContactDetails', on_delete=models.SET_NULL, blank=True, null=True, related_name='employees')
-    plan = models.ForeignKey(PaymentPlan, on_delete=models.SET_NULL, null=True, blank=True)
-    plan_paid = models.BooleanField(default=False)
-    plan_expiry_date = models.DateField(null=True, blank=True)
-
+    
     USERNAME_FIELD = 'email'
     objects = CustomUserManager()
 
@@ -58,10 +58,14 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
         return self.email
 
     def approve(self):
-        self.is_active = not self.is_active
+        self.is_approved = not self.is_approved
+        self.save()
+    
+    def disapprove(self):
+        self.is_approved = not self.is_approved
         self.save()
 
-class CompanyContactDetails(models.Model):
+class Company(models.Model):
     COMPANY_TYPES = (
         ('Fleet Company', 'Fleet Company'),
         ('Cargo Company', 'Cargo Company'),
@@ -81,16 +85,14 @@ class CompanyContactDetails(models.Model):
     company_description = models.TextField(blank=True, null=True)
     operating_hours = models.CharField(max_length=100, blank=True, null=True)
     social_media_links = models.JSONField(blank=True, null=True)
-    plan = models.ForeignKey(PaymentPlan, on_delete=models.SET_NULL, null=True, blank=True)
-    plan_paid = models.BooleanField(default=False)
-    plan_expiry_date = models.DateField(null=True, blank=True)
+    
 
     def __str__(self):
         return self.companyName
 
-class CompanyMembership(models.Model):
+class CompanyMember(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    company = models.ForeignKey(CompanyContactDetails, on_delete=models.CASCADE)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE)
     is_admin = models.BooleanField(default=False)
     date_joined = models.DateTimeField(auto_now_add=True)
 
@@ -99,7 +101,7 @@ class CompanyMembership(models.Model):
 
 class Invitation(models.Model):
     email = models.EmailField()
-    company = models.ForeignKey(CompanyContactDetails, on_delete=models.CASCADE)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE)
     invited_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='invitations_sent')
     date_invited = models.DateTimeField(auto_now_add=True)
     token = models.CharField(max_length=50, unique=True, default=uuid.uuid4)
@@ -112,15 +114,35 @@ class Invitation(models.Model):
         if not self.is_accepted:
             self.is_accepted = True
             self.save()
-            CompanyMembership.objects.create(user=user, company=self.company)
+            Company.objects.create(user=user, company=self.company)
 
 @receiver(post_save, sender=CustomUser)
 def create_company_details(sender, instance, created, **kwargs):
     if created and instance.is_company:
-        CompanyContactDetails.objects.create(user=instance, companyName="Update Your Company Name")
+        Company.objects.create(user=instance, companyName="Update Your Company Name")
 
 @receiver(post_save, sender=Invitation)
 def send_invitation_email(sender, instance, created, **kwargs):
     if created:
+        logger.info(f"Sending invitation email to {instance.email} for company {instance.company.companyName}")
         # Logic to send email invitation with the token
         pass  # Implement the email sending logic here
+    
+# class CompanyMembership(models.Model):
+#     MEMBERSHIP_TYPES = (
+#         ('basic', 'Basic'),
+#         ('premium', 'Premium'),
+#     )
+
+#     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+#     membership_type = models.CharField(max_length=20, choices=MEMBERSHIP_TYPES)
+#     expiration_date = models.DateField()
+#     is_active = models.BooleanField(default=True)  # Default membership status is active
+#     created_at = models.DateTimeField(auto_now_add=True)
+#     updated_at = models.DateTimeField(auto_now=True)
+
+#     def is_active(self):
+#         return self.expiration_date >= timezone.now().date()
+    
+#     def is_expired(self):
+#         return self.expiration_date < timezone.now().date()

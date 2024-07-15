@@ -1,47 +1,46 @@
 from rest_framework import serializers
-from .models import CompanyContactDetails, CustomUser, Invitation, PaymentPlan
-from djoser.serializers import UserCreateSerializer as BaseUserCreateSerializer, UserSerializer as BaseUserSerializer
+from .models import CustomUser, Company, CompanyMember, Invitation, PaymentPlan
 
 class PaymentPlanSerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentPlan
         fields = '__all__'
 
-class CompanyContactDetailsSerializer(serializers.ModelSerializer):
-    is_profile_complete = serializers.SerializerMethodField()
-    plan_details = PaymentPlanSerializer(source='plan', read_only=True)
-
+class CompanySerializer(serializers.ModelSerializer):
     class Meta:
-        model = CompanyContactDetails
+        model = Company
         fields = '__all__'
-        read_only_fields = ['user']
 
-    def get_is_profile_complete(self, obj):
-        # Assuming you have a method `is_profile_complete` in the model
-        return obj.is_profile_complete()
+class CompanyMemberSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CompanyMember
+        fields = '__all__'
 
 class InvitationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Invitation
         fields = '__all__'
 
-class UserSerializer(BaseUserSerializer):
-    company_details = CompanyContactDetailsSerializer(source='company', read_only=True)
-    plan_details = PaymentPlanSerializer(source='plan', read_only=True)
+class UserSerializer(serializers.ModelSerializer):
+    company_details = CompanySerializer(source='company', read_only=True)
     invitations = InvitationSerializer(source='invitations_sent', many=True, read_only=True)
 
-    class Meta(BaseUserSerializer.Meta):
+    class Meta:
         model = CustomUser
-        fields = BaseUserSerializer.Meta.fields + (
-            'full_name', 'phone_number', 'address', 'profile_picture', 'is_individual', 
-            'is_company', 'company', 'company_details', 'plan', 'plan_details', 
-            'plan_paid', 'plan_expiry_date', 'invitations'
-        )
+        fields = [
+            'id', 'email', 'full_name', 'phone_number', 'address', 'profile_picture', 'is_individual',
+            'is_company', 'is_staff', 'is_active', 'company_details', 'invitations'
+        ]
 
-class UserCreateSerializer(BaseUserCreateSerializer):
-    class Meta(BaseUserCreateSerializer.Meta):
+class CustomUserCreateSerializer(serializers.ModelSerializer):
+    class Meta:
         model = CustomUser
-        fields = BaseUserCreateSerializer.Meta.fields + (
-            'full_name', 'phone_number', 'address', 'profile_picture', 
-            'is_individual', 'is_company', 'company'
-        )
+        fields = [
+            'email', 'password', 'full_name', 'phone_number', 'address', 'profile_picture', 
+            'is_individual', 'is_company'
+        ]
+        extra_kwargs = {'password': {'write_only': True}}
+
+    def create(self, validated_data):
+        user = CustomUser.objects.create_user(**validated_data)
+        return user

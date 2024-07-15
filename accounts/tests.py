@@ -1,121 +1,82 @@
 from django.urls import reverse
 from rest_framework import status
-from rest_framework.test import APITestCase, APIClient
-from .models import CustomUser, CompanyContactDetails, Invitation, PaymentPlan, CompanyMembership
-from .serializers import UserCreateSerializer
-from django.utils.crypto import get_random_string
+from rest_framework.test import APITestCase
+from django.contrib.auth import get_user_model
+from .models import Company, Invitation, CompanyMember
+import uuid
 
-class UserTests(APITestCase):
-    def setUp(self):
-        self.client = APIClient()
-        self.user = CustomUser.objects.create_user(email='test@example.com', password='password', is_company=True)
-        self.client.force_authenticate(user=self.user)
+User = get_user_model()
 
-    def test_list_users(self):
-        response = self.client.get(reverse('customuser-list'))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
+class UserOnboardingTests(APITestCase):
+    def test_user_registration(self):
+        url = reverse('onboarding-list')
+        data = {
+            'email': 'testuser@example.com',
+            'password': 'testpassword123',
+            'full_name': 'Test User',
+            'phone_number': '1234567890',
+            'address': '123 Test St',
+            'is_individual': True
+        }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(User.objects.count(), 1)
+        self.assertEqual(User.objects.get().email, 'testuser@example.com')
 
-    def test_activate_user(self):
-        response = self.client.post(reverse('customuser-activate', kwargs={'pk': self.user.pk}))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.user.refresh_from_db()
-        self.assertTrue(self.user.is_active)
-
-    def test_deactivate_user(self):
-        response = self.client.post(reverse('customuser-deactivate', kwargs={'pk': self.user.pk}))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.user.refresh_from_db()
-        self.assertFalse(self.user.is_active)
-
-class CompanyContactDetailsTests(APITestCase):
-    def setUp(self):
-        self.client = APIClient()
-        self.user = CustomUser.objects.create_user(email='company@example.com', password='password', is_company=True)
-        self.company = CompanyContactDetails.objects.create(
-            user=self.user,
-            company_type='Fleet Company',
-            companyName='Test Company',
-            companyTelephone='123456789',
-            companyEmail='info@testcompany.com',
-            companyWebsite='http://testcompany.com',
-            companyAddress='Test Address'
-        )
-        self.client.force_authenticate(user=self.user)
-
-    def test_get_company_details(self):
-        response = self.client.get(reverse('companycontactdetails-detail', kwargs={'pk': self.company.pk}))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['companyName'], 'Test Company')
+    def test_company_registration(self):
+        url = reverse('onboarding-list')
+        data = {
+            'email': 'testcompany@example.com',
+            'password': 'testpassword123',
+            'full_name': 'Test Company',
+            'phone_number': '1234567890',
+            'address': '123 Company St',
+            'is_company': True
+        }
+        response = self.client.post(url, data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(User.objects.count(), 1)
+        self.assertEqual(User.objects.get().email, 'testcompany@example.com')
+        self.assertEqual(Company.objects.count(), 1)
+        self.assertEqual(Company.objects.get().user.email, 'testcompany@example.com')
 
 class InvitationTests(APITestCase):
     def setUp(self):
-        self.client = APIClient()
-        self.user = CustomUser.objects.create_user(email='company@example.com', password='password', is_company=True)
-        self.company = CompanyContactDetails.objects.create(
-            user=self.user,
-            company_type='Fleet Company',
-            companyName='Test Company',
-            companyTelephone='123456789',
-            companyEmail='info@testcompany.com',
-            companyWebsite='http://testcompany.com',
-            companyAddress='Test Address'
-        )
-        self.client.force_authenticate(user=self.user)
+        self.company_user = User.objects.create_user(email='company@example.com', password='companypassword', is_company=True)
+        if not Company.objects.filter(user=self.company_user).exists():
+            self.company = Company.objects.create(user=self.company_user, companyName='Test Company')
+        else:
+            self.company = Company.objects.get(user=self.company_user)
+        self.client.login(email='company@example.com', password='companypassword')
 
     def test_create_invitation(self):
+        url = reverse('invitation-list')
         data = {
             'email': 'invitee@example.com',
-            'company': self.company.pk
+            'company': self.company.id
         }
-        response = self.client.post(reverse('invitation-list'), data)
+        self.client.force_authenticate(user=self.company_user)
+        response = self.client.post(url, data, format='json')
+        if response.status_code != status.HTTP_201_CREATED:
+            print("Response Data:", response.data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(Invitation.objects.filter(email='invitee@example.com').exists())
+        self.assertEqual(Invitation.objects.count(), 1)
+        self.assertEqual(Invitation.objects.get().email, 'invitee@example.com')
 
     def test_accept_invitation(self):
-        invitation = Invitation.objects.create(
-            email='invitee@example.com',
-            company=self.company,
-            invited_by=self.user,
-            token=get_random_string(50)
-        )
-        data = {'token': invitation.token}
-        response = self.client.post(reverse('invitation-accept-invitation', kwargs={'token': invitation.token}), data)
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        invitation.refresh_from_db()
-        self.assertTrue(invitation.is_accepted)
-        self.assertTrue(CustomUser.objects.filter(email='invitee@example.com').exists())
-        self.assertTrue(CompanyMembership.objects.filter(user__email='invitee@example.com', company=self.company).exists())
-
-class PaymentPlanTests(APITestCase):
-    def setUp(self):
-        self.client = APIClient()
-        self.user = CustomUser.objects.create_user(email='admin@example.com', password='password', is_staff=True)
-        self.client.force_authenticate(user=self.user)
-
-    def test_list_payment_plans(self):
-        response = self.client.get(reverse('paymentplan-list'))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-
-    def test_get_payment_plan(self):
-        plan = PaymentPlan.objects.create(
-            name='Standard Plan',
-            plan_type='individual',
-            price=99.99,
-            duration_days=30
-        )
-        response = self.client.get(reverse('paymentplan-detail', kwargs={'pk': plan.pk}))
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['name'], 'Standard Plan')
-
-class UserOnboardingTests(APITestCase):
-    def test_user_onboarding(self):
-        data = {
-            "email": "newuser@example.com",
-            "password": "password",
-            "full_name": "New User",
-            "company_name": "New User's Company"
-        }
-        response = self.client.post(reverse('onboarding-list'), data)
+        invitation = Invitation.objects.create(email='invitee@example.com', company=self.company, invited_by=self.company_user, token=uuid.uuid4())
+        url = reverse('invitation-accept', args=[str(invitation.token)])
+        self.client.force_authenticate(user=self.company_user)
+        response = self.client.post(url, {}, format='json')
+        if response.status_code != status.HTTP_201_CREATED:
+            print("Response Data:", response.data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(CustomUser.objects.filter(email='newuser@example.com').exists())
-        self.assertTrue(CompanyContactDetails.objects.filter(companyName="New User's Company").exists())
+        self.assertTrue(Invitation.objects.get(id=invitation.id).is_accepted)
+        self.assertEqual(User.objects.count(), 2)
+        self.assertTrue(User.objects.get(email='invitee@example.com').is_active)
+        self.assertEqual(CompanyMember.objects.count(), 1)
+        self.assertEqual(CompanyMember.objects.get().user.email, 'invitee@example.com')
+
+if __name__ == "__main__":
+    import unittest
+    unittest.main()

@@ -1,9 +1,9 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import CustomUser, CompanyContactDetails
+from .models import CustomUser, Company
 
-class CompanyContactDetailsInline(admin.StackedInline):  # or admin.TabularInline
-    model = CompanyContactDetails
+class CompanyInline(admin.StackedInline):  # or admin.TabularInline
+    model = Company
     can_delete = False
     verbose_name_plural = 'Company Contact Details'
 
@@ -38,8 +38,8 @@ class UserAdmin(BaseUserAdmin):
     ordering = ('email',)
     filter_horizontal = ('groups', 'user_permissions',)
 
-    inlines = [CompanyContactDetailsInline]
+    inlines = [CompanyInline]
 
 # Register CustomUser model with the UserAdmin
 admin.site.register(CustomUser, UserAdmin)
-admin.site.register(CompanyContactDetails)
+admin.site.register(Company)
