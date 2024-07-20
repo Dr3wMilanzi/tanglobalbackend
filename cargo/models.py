@@ -2,6 +2,7 @@ from django.db import models
 from django.utils.text import slugify
 from django_resized import ResizedImageField
 import uuid
+from django.conf import settings
 
 class CargoType(models.Model):
     name = models.CharField(max_length=180)
@@ -17,7 +18,7 @@ class CargoType(models.Model):
 
 class Cargo(models.Model):
     uuid = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    slug = models.SlugField(unique=True, blank=True,editable=False)
+    slug = models.SlugField(unique=True, blank=True, editable=False)
     weight = models.DecimalField(max_digits=10, decimal_places=2)
     cargo_type = models.ForeignKey(CargoType, related_name='cargos', on_delete=models.CASCADE)
     
@@ -37,7 +38,7 @@ class Cargo(models.Model):
     destination = models.CharField(max_length=255)
     receiver_name = models.CharField(max_length=255)
     receiver_contact = models.CharField(max_length=255)
-    sender_name = models.CharField(max_length=255, blank=True, null=True)
+    sender_name = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='cargos', on_delete=models.CASCADE, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
