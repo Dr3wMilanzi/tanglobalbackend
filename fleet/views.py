@@ -1,38 +1,39 @@
-from rest_framework import viewsets,generics
+# views.py
+from rest_framework import viewsets
+from .models import VehicleType, Vehicle, Driver, Trip, VehicleImage
+from .serializers import VehicleTypeSerializer, VehicleSerializer, DriverSerializer, TripSerializer, VehicleImageSerializer
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.parsers import MultiPartParser, FormParser
-from .models import Vehicle,VehicleImage,VehicleType
-from rest_framework.permissions import IsAuthenticated
-from .serializers import VehicleSerializer,VehicleImageSerializer,VehicleTypeSerializer
-from rest_framework.response import Response
 
-class VehicleCreateList(generics.ListCreateAPIView):
-    queryset = Vehicle.objects.all()
-    serializer_class = VehicleSerializer
-    parser_classes = (MultiPartParser, FormParser)
-    permission_classes = [IsAuthenticated]
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
-
-class VehicleDetail(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Vehicle.objects.all()
-    serializer_class = VehicleSerializer
-    parser_classes = (MultiPartParser, FormParser)
-    permission_classes = [IsAuthenticated]
-
-
-class VehicleTypeView(generics.ListCreateAPIView):
+class VehicleTypeViewSet(viewsets.ModelViewSet):
     queryset = VehicleType.objects.all()
     serializer_class = VehicleTypeSerializer
+    lookup_field = 'slug'
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
-
-class ApproveVehicleView(generics.UpdateAPIView):
+class VehicleViewSet(viewsets.ModelViewSet):
     queryset = Vehicle.objects.all()
     serializer_class = VehicleSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    parser_classes = [MultiPartParser, FormParser]
+    
+    def perform_create(self, serializer):
+        vehicle = serializer.save(created_by=self.request.user)
+        for image in self.request.FILES.getlist('images'):
+            VehicleImage.objects.create(vehicle=vehicle, image=image)
 
-    def patch(self, request, *args, **kwargs):
-        instance = self.get_object()
-        instance.isApproved = True
-        instance.save()
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
+class DriverViewSet(viewsets.ModelViewSet):
+    queryset = Driver.objects.all()
+    serializer_class = DriverSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+class TripViewSet(viewsets.ModelViewSet):
+    queryset = Trip.objects.all()
+    serializer_class = TripSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+class VehicleImageViewSet(viewsets.ModelViewSet):
+    queryset = VehicleImage.objects.all()
+    serializer_class = VehicleImageSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+    parser_classes = [MultiPartParser, FormParser]

@@ -1,13 +1,13 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import VehicleCreateList,VehicleTypeView,VehicleDetail,ApproveVehicleView
+from .views import VehicleTypeViewSet, VehicleViewSet, DriverViewSet, TripViewSet, VehicleImageViewSet
 
-
+router = DefaultRouter()
+router.register(r'type', VehicleTypeViewSet, basename='vehicle-type')
+router.register(r'', VehicleViewSet, basename='vehicle')
+router.register(r'drivers', DriverViewSet, basename='driver')
+router.register(r'trips', TripViewSet, basename='trip')
 
 urlpatterns = [
-    # path('', include(router.urls)),
-    path('',VehicleCreateList.as_view(),name="vehicles"),
-    path("<int:pk>/",VehicleDetail.as_view(), name="vehicle-detail"),
-    path('<int:pk>/approve/', ApproveVehicleView.as_view(), name='vehicle-approve'),
-    path('type', VehicleTypeView.as_view(), name='vehicle-type'),
+    path('', include(router.urls)),
 ]
