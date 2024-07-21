@@ -152,11 +152,14 @@ REST_FRAMEWORK = {
 
 
 DJOSER = {
+    'PASSWORD_RESET_CONFIRM_URL': '/password/reset/confirm/{uid}/{token}',
     'LOGIN_FIELD': 'email',
+    'ACTIVATION_URL': '/activate/{uid}/{token}',
+    'SEND_ACTIVATION_EMAIL': True,
     'SERIALIZERS': {
-        'user': 'accounts.serializers.CustomUserCreateSerializer',
-        'current_user': 'accounts.serializers.CustomUserSerializer',
-        'user_create': 'accounts.serializers.RegisterSerializer',
+        'user': 'accounts.serializers.UserSerializer',
+        'current_user': 'accounts.serializers.UserSerializer',
+        'user_create': 'accounts.serializers.CustomUserCreateSerializer',
         # 'current_user': 'accounts.serializers.CurrentUserSerializer'
     }
 }
@@ -169,3 +172,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:9000",
     "http://localhost:5173",
 ]
+
+# settings.py
+
+EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
+EMAIL_FILE_PATH = '/Users/codex-008/Desktop'  # Replace with your desktop path

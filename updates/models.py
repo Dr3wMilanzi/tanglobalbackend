@@ -52,6 +52,10 @@ class Update(models.Model):
 
     def __str__(self):
         return self.name
+    
+    def approve(self):
+        self.is_approved = True
+        self.save()
 
     class Meta:
         verbose_name = "Update"
