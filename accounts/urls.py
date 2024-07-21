@@ -4,7 +4,7 @@ from .views import UserOnboardingViewSet, CompanyViewSet, CompanyMemberViewSet, 
 
 router = DefaultRouter()
 router.register(r'onboarding', UserOnboardingViewSet, basename='onboarding')
-router.register(r'companies', CompanyViewSet)
+router.register(r'', CompanyViewSet)
 router.register(r'company-members', CompanyMemberViewSet)
 router.register(r'invitations', InvitationViewSet)
 router.register(r'payment-plans', PaymentPlanViewSet)

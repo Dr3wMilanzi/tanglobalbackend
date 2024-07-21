@@ -29,7 +29,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = CustomUser
         fields = [
             'id', 'email', 'full_name', 'phone_number', 'address', 'profile_picture', 'is_individual',
-            'is_company', 'is_staff', 'is_active', 'company_details', 'invitations'
+            'is_company','is_superuser', 'is_staff', 'is_active', 'company_details', 'invitations'
         ]
 
 class CustomUserCreateSerializer(serializers.ModelSerializer):
