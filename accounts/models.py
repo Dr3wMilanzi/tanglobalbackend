@@ -40,10 +40,17 @@ class PaymentPlan(models.Model):
         return f"{self.name} ({self.plan_type})"
 
 class CustomUser(AbstractBaseUser, PermissionsMixin):
+    TYPE_OF_USER = [
+        ('NAU', 'Normal App User'),
+        ('FOU', 'Fleet Owner User'),
+        ('COU', 'Cargo Owner User'),
+    ]
+    
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     email = models.EmailField(unique=True, blank=False, null=False)
     full_name = models.CharField(max_length=180, blank=True, null=True)
     phone_number = models.CharField(max_length=15, blank=True, null=True)
+    user_type = models.CharField(max_length=20, choices=TYPE_OF_USER, default="NAU")
     address = models.TextField(blank=True, null=True)
     profile_picture = models.ImageField(upload_to='profile_pictures/', blank=True, null=True)
     is_individual = models.BooleanField(default=False)
@@ -119,7 +126,8 @@ class Invitation(models.Model):
 @receiver(post_save, sender=CustomUser)
 def create_company_details(sender, instance, created, **kwargs):
     if created and instance.is_company:
-        Company.objects.create(user=instance, companyName="Update Your Company Name")
+        company_type = "Fleet Company" if instance.user_type == "FOU" else "Cargo Company" if instance.user_type == "COU" else None
+        Company.objects.create(user=instance, companyName="Update Your Company Name", company_type=company_type)
 
 @receiver(post_save, sender=Invitation)
 def send_invitation_email(sender, instance, created, **kwargs):
@@ -137,7 +145,7 @@ def send_invitation_email(sender, instance, created, **kwargs):
 #     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 #     membership_type = models.CharField(max_length=20, choices=MEMBERSHIP_TYPES)
 #     expiration_date = models.DateField()
-#     is_active = models.BooleanField(default=True)  # Default membership status is active
+#     is_active = models.BooleanField(default(True))  # Default membership status is active
 #     created_at = models.DateTimeField(auto_now_add=True)
 #     updated_at = models.DateTimeField(auto_now=True)
 
