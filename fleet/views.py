@@ -1,5 +1,7 @@
 # views.py
 from rest_framework import viewsets
+from rest_framework.decorators import action  # Add this import
+from rest_framework.response import Response
 from .models import VehicleType, Vehicle, Driver, Trip, VehicleImage
 from .serializers import VehicleTypeSerializer, VehicleSerializer, DriverSerializer, TripSerializer, VehicleImageSerializer
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
@@ -16,6 +18,16 @@ class VehicleViewSet(viewsets.ModelViewSet):
     serializer_class = VehicleSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
     parser_classes = [MultiPartParser, FormParser]
+    
+    @action(detail=False, methods=['get'], url_path='my-vehicles', permission_classes=[IsAuthenticated])
+    def get_vehicles_for_user(self, request):
+        """
+        Custom action to get vehicles owned by the logged-in user.
+        """
+        user = request.user
+        vehicles = Vehicle.objects.filter(created_by=user)
+        serializer = self.get_serializer(vehicles, many=True)
+        return Response(serializer.data)
     
     def perform_create(self, serializer):
         vehicle = serializer.save(created_by=self.request.user)
