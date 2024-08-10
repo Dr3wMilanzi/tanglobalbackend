@@ -1,4 +1,5 @@
 from rest_framework import viewsets, status
+from django.views.generic import TemplateView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAdminUser,IsAuthenticatedOrReadOnly
 from .permissions import IsCompany
@@ -102,3 +103,7 @@ class PaymentPlanViewSet(viewsets.ModelViewSet):
     queryset = PaymentPlan.objects.all()
     serializer_class = PaymentPlanSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+    
+    
+class Homepage(TemplateView):
+    template_name = "index.html" 
