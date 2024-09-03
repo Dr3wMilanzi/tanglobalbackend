@@ -172,7 +172,8 @@ DJOSER = {
 
 CORS_ALLOWED_ORIGINS = [
     # "https://example.com",
-    # "https://sub.example.com",
+    "https://tanglobal.co.tz",
+    "http://tanglobal.co.tz",
     "http://localhost:8080",
     "http://127.0.0.1:9000",
     "http://localhost:5173",
